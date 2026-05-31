@@ -63,14 +63,8 @@ if [ -n "${CODEX_ENV_GO_VERSION}" ]; then
 fi
 
 if [ -n "${CODEX_ENV_SWIFT_VERSION}" ]; then
-    current=$(swift --version | sed -n 's/^Swift version \([0-9]\+\.[0-9]\+\).*/\1/p')   # ==> 6.2
-    echo "# Swift: ${CODEX_ENV_SWIFT_VERSION} (default: ${current})"
-    if [ "${current}" != "${CODEX_ENV_SWIFT_VERSION}" ]; then
-        swiftly use "${CODEX_ENV_SWIFT_VERSION}"
-        swift --version
-    fi
+    echo "# Swift: omitted from this image; ignoring CODEX_ENV_SWIFT_VERSION=${CODEX_ENV_SWIFT_VERSION}"
 fi
-
 
 if [ -n "${CODEX_ENV_PHP_VERSION}" ]; then
     current=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')

@@ -1,0 +1,175 @@
+# syntax=docker/dockerfile:1.7
+FROM ubuntu:26.04
+
+ARG TARGETARCH
+ARG GO_VERSION=1.25.1
+ARG NODE_VERSION=22
+ARG KUSTOMIZE_VERSION=5.7.1
+ARG TALOSCTL_VERSION=1.11.3
+ARG FLUX_VERSION=2.6.4
+ARG SOPS_VERSION=3.10.2
+ARG HERMES_BRANCH=main
+ARG CODE_SERVER_VERSION=
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PATH=/root/.local/bin:/root/go/bin:/usr/local/go/bin:/opt/node/bin:${PATH} \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        wget \
+        gnupg \
+        sudo \
+        bash-completion \
+        build-essential \
+        pkg-config \
+        git \
+        git-lfs \
+        openssh-client \
+        python3 \
+        python3-dev \
+        libffi-dev \
+        python3-pip \
+        python3-venv \
+        pipx \
+        jq \
+        yq \
+        ripgrep \
+        fd-find \
+        unzip \
+        zip \
+        tar \
+        gzip \
+        xz-utils \
+        less \
+        vim-tiny \
+        nano \
+        make \
+        gettext-base \
+        rsync \
+        netcat-openbsd \
+        iputils-ping \
+        dnsutils \
+        openssl \
+        age \
+        tini \
+    && git lfs install --system \
+    && rm -rf /var/lib/apt/lists/*
+
+# GitHub CLI and kubectl via official apt repositories.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    install -dm 0755 /etc/apt/keyrings \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+    && curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg \
+    && chmod go+r /etc/apt/keyrings/kubernetes-apt-keyring.gpg \
+    && echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /' > /etc/apt/sources.list.d/kubernetes.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends gh kubectl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Go.
+RUN case "${TARGETARCH:-amd64}" in \
+      amd64) go_arch=amd64 ;; \
+      arm64) go_arch=arm64 ;; \
+      *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${go_arch}.tar.gz" -o /tmp/go.tgz \
+    && rm -rf /usr/local/go \
+    && tar -C /usr/local -xzf /tmp/go.tgz \
+    && rm /tmp/go.tgz \
+    && go version
+
+# Node.js + TypeScript + pnpm through corepack.
+RUN case "${TARGETARCH:-amd64}" in \
+      amd64) node_arch=x64 ;; \
+      arm64) node_arch=arm64 ;; \
+      *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
+    esac \
+    && node_version="$(curl -fsSL https://nodejs.org/dist/latest-v${NODE_VERSION}.x/SHASUMS256.txt | awk '/linux-'"${node_arch}"'.tar.xz$/ {sub(/^node-v/, "", $2); sub(/-linux-.*/, "", $2); print $2; exit}')" \
+    && test -n "${node_version}" \
+    && curl -fsSL "https://nodejs.org/dist/v${node_version}/node-v${node_version}-linux-${node_arch}.tar.xz" -o /tmp/node.tar.xz \
+    && mkdir -p /opt/node \
+    && tar -C /opt/node --strip-components=1 -xJf /tmp/node.tar.xz \
+    && rm /tmp/node.tar.xz \
+    && corepack enable \
+    && corepack prepare pnpm@latest --activate \
+    && npm install -g typescript tsx @types/node \
+    && node --version \
+    && pnpm --version \
+    && tsc --version
+
+# Python tooling commonly needed in devcontainers.
+RUN python3 -m pipx ensurepath \
+    && pipx install uv \
+    && pipx install ruff \
+    && pipx install black \
+    && pipx install poetry \
+    && uv --version \
+    && ruff --version \
+    && black --version \
+    && poetry --version
+
+# Kubernetes/GitOps/Talos helpers not provided as Ubuntu packages.
+RUN case "${TARGETARCH:-amd64}" in \
+      amd64) bin_arch=amd64; kustomize_arch=amd64 ;; \
+      arm64) bin_arch=arm64; kustomize_arch=arm64 ;; \
+      *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
+    esac \
+    && curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20) \
+    && "${curl_retry[@]}" "https://get.helm.sh/helm-v3.19.2-linux-${bin_arch}.tar.gz" -o /tmp/helm.tgz \
+    && tar -C /tmp -xzf /tmp/helm.tgz \
+    && install -m 0755 "/tmp/linux-${bin_arch}/helm" /usr/local/bin/helm \
+    && rm -rf /tmp/helm.tgz "/tmp/linux-${bin_arch}" \
+    && "${curl_retry[@]}" "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_${kustomize_arch}.tar.gz" -o /tmp/kustomize.tgz \
+    && tar -C /usr/local/bin -xzf /tmp/kustomize.tgz kustomize \
+    && rm /tmp/kustomize.tgz \
+    && "${curl_retry[@]}" "https://github.com/siderolabs/talos/releases/download/v${TALOSCTL_VERSION}/talosctl-linux-${bin_arch}" -o /usr/local/bin/talosctl \
+    && chmod +x /usr/local/bin/talosctl \
+    && "${curl_retry[@]}" "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}/flux_${FLUX_VERSION}_linux_${bin_arch}.tar.gz" -o /tmp/flux.tgz \
+    && tar -C /usr/local/bin -xzf /tmp/flux.tgz flux \
+    && rm /tmp/flux.tgz \
+    && "${curl_retry[@]}" "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${bin_arch}" -o /usr/local/bin/sops \
+    && chmod +x /usr/local/bin/sops \
+    && helm version --short \
+    && kustomize version \
+    && talosctl version --client \
+    && flux --version
+
+
+# code-server: standalone install under /usr/local to avoid systemd assumptions.
+RUN curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20) \
+    && "${curl_retry[@]}" https://code-server.dev/install.sh -o /tmp/code-server-install.sh \
+    && sh /tmp/code-server-install.sh --method standalone --prefix=/usr/local ${CODE_SERVER_VERSION:+--version ${CODE_SERVER_VERSION}} \
+    && rm /tmp/code-server-install.sh \
+    && code-server --version
+
+# Hermes Agent: root Docker install uses FHS layout at /usr/local/lib/hermes-agent
+# and command wrappers in /usr/local/bin. Skip interactive setup and browser deps;
+# runtime config/secrets are expected via mounted HERMES_HOME or env vars.
+RUN curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20) \
+    && "${curl_retry[@]}" https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh -o /tmp/hermes-install.sh \
+    && bash /tmp/hermes-install.sh --branch "${HERMES_BRANCH}" --skip-setup --skip-browser \
+    && rm /tmp/hermes-install.sh \
+    && hermes --version \
+    && hermes tools list >/tmp/hermes-tools-list.txt || true
+
+COPY setup_slim.sh /opt/codex/setup_universal.sh
+COPY verify_slim.sh /opt/codex/verify.sh
+COPY devcontainer-start /usr/local/bin/devcontainer-start
+RUN chmod +x /opt/codex/setup_universal.sh /opt/codex/verify.sh /usr/local/bin/devcontainer-start
+
+WORKDIR /workspace
+EXPOSE 8080
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/usr/local/bin/devcontainer-start"]

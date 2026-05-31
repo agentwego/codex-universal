@@ -1,0 +1,99 @@
+version: '3'
+
+vars:
+  IMAGE: '{{.IMAGE | default "ghcr.io/agentwego/codex-universal"}}'
+  TAG: '{{.TAG | default "slim"}}'
+  PLATFORM: '{{.PLATFORM | default "linux/amd64"}}'
+  CONTAINER_ENGINE: '{{.CONTAINER_ENGINE | default "docker"}}'
+  DOCKERFILE: '{{.DOCKERFILE | default "Dockerfile.slim"}}'
+
+env:
+  DOCKER_BUILDKIT: '1'
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  status:
+    desc: Show git and container build context status
+    cmds:
+      - git status --short --branch
+      - git remote -v
+      - '{{.CONTAINER_ENGINE}} version --format "{{`{{.Server.Version}}`}}" 2>/dev/null || {{.CONTAINER_ENGINE}} version'
+
+  build:
+    desc: Build the codex-universal image locally
+    cmds:
+      - >-
+        {{.CONTAINER_ENGINE}} build
+        --platform {{.PLATFORM}}
+        -f {{.DOCKERFILE}}
+        -t {{.IMAGE}}:{{.TAG}}
+        .
+
+  build-no-cache:
+    desc: Build the image without cache
+    cmds:
+      - >-
+        {{.CONTAINER_ENGINE}} build
+        --no-cache
+        --platform {{.PLATFORM}}
+        -f {{.DOCKERFILE}}
+        -t {{.IMAGE}}:{{.TAG}}
+        .
+
+  shell:
+    desc: Open an interactive shell in the built image, mounting the current repo at /workspace/codex-universal
+    deps: [build]
+    cmds:
+      - >-
+        {{.CONTAINER_ENGINE}} run --rm -it
+        --platform {{.PLATFORM}}
+        -v "${PWD}:/workspace/codex-universal"
+        -w /workspace/codex-universal
+        {{.IMAGE}}:{{.TAG}}
+        bash
+
+  smoke:
+    desc: Run a cheap smoke test against the built image
+    deps: [build]
+    cmds:
+      - >-
+        {{.CONTAINER_ENGINE}} run --rm
+        --platform {{.PLATFORM}}
+        {{.IMAGE}}:{{.TAG}}
+        bash -lc 'git --version && gh --version && python3 --version && uv --version && node --version && pnpm --version && go version && kubectl version --client=true && helm version --short && talosctl version --client'
+
+  verify:
+    desc: Run verify.sh inside the built image
+    deps: [build]
+    cmds:
+      - >-
+        {{.CONTAINER_ENGINE}} run --rm
+        --platform {{.PLATFORM}}
+        {{.IMAGE}}:{{.TAG}}
+        /opt/codex/verify.sh
+
+  clean-image:
+    desc: Remove the local image tag
+    cmds:
+      - '{{.CONTAINER_ENGINE}} image rm {{.IMAGE}}:{{.TAG}} || true'
+
+  push:
+    desc: Push the image tag to the configured registry
+    deps: [build]
+    cmds:
+      - '{{.CONTAINER_ENGINE}} push {{.IMAGE}}:{{.TAG}}'
+
+  inspect:
+    desc: Inspect the local image metadata
+    cmds:
+      - '{{.CONTAINER_ENGINE}} image inspect {{.IMAGE}}:{{.TAG}}'
+
+  sync-upstream:
+    desc: Fetch upstream changes for manual merge/rebase
+    cmds:
+      - git fetch upstream main
+      - git log --oneline --decorate --graph --max-count=20 HEAD upstream/main

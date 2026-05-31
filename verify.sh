@@ -8,7 +8,6 @@ read -ra PYTHON <<< "$PYTHON_VERSIONS"
 read -ra NODE   <<< "$NODE_VERSIONS"
 read -ra RUST   <<< "$RUST_VERSIONS"
 read -ra GO     <<< "$GO_VERSIONS"
-read -ra SWIFT  <<< "$SWIFT_VERSIONS"
 read -ra RUBY   <<< "$RUBY_VERSIONS"
 read -ra PHP    <<< "$PHP_VERSIONS"
 read -ra JAVA   <<< "$JAVA_VERSIONS"
@@ -18,7 +17,6 @@ max=$(printf "%s\n" \
   ${#NODE[@]} \
   ${#RUST[@]} \
   ${#GO[@]} \
-  ${#SWIFT[@]} \
   ${#RUBY[@]} \
   ${#PHP[@]} \
   ${#JAVA[@]} \
@@ -29,7 +27,6 @@ for ((i=max-1; i>=0; i--)); do
   CODEX_ENV_NODE_VERSION=${NODE[i]:-${NODE[0]}} \
   CODEX_ENV_RUST_VERSION=${RUST[i]:-${RUST[0]}} \
   CODEX_ENV_GO_VERSION=${GO[i]:-${GO[0]}} \
-  CODEX_ENV_SWIFT_VERSION=${SWIFT[i]:-${SWIFT[0]}} \
   CODEX_ENV_RUBY_VERSION=${RUBY[i]:-${RUBY[0]}} \
   CODEX_ENV_PHP_VERSION=${PHP[i]:-${PHP[0]}} \
   CODEX_ENV_JAVA_VERSION=${JAVA[i]:-${JAVA[0]}} \
@@ -60,9 +57,6 @@ java -version
 javac -version
 gradle --version | head -n 3
 mvn --version | head -n 1
-
-echo "- Swift:"
-swift --version
 
 echo "- Ruby:"
 ruby --version

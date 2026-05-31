@@ -1,0 +1,59 @@
+name: Build Hermes code-server image
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - Dockerfile.slim
+      - setup_slim.sh
+      - verify_slim.sh
+      - devcontainer-start
+      - Taskfile.yml
+      - .github/workflows/build-hermes-code.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-hermes-code-amd64:
+    runs-on:
+      group: codex-runners
+      labels: codex-linux-x64
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Compute image tags
+        id: meta
+        shell: bash
+        run: |
+          short_sha="${GITHUB_SHA::12}"
+          stamp="$(date -u +%Y%m%d-%H%M%S)"
+          echo "version_tag=hermes-code-${stamp}-${short_sha}" >> "$GITHUB_OUTPUT"
+      - name: Build and push Hermes code-server image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: Dockerfile.slim
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:hermes-code
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version_tag }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:hermes-code
+          cache-to: type=inline
+          provenance: false
+          sbom: false
+      - name: Verify pushed tag exists
+        run: |
+          docker buildx imagetools inspect "$REGISTRY/$IMAGE_NAME:${{ steps.meta.outputs.version_tag }}"

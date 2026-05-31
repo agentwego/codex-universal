@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -14,71 +14,71 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update \
     && apt-get install -y --no-install-recommends \
-        binutils=2.42-* \
-        sudo=1.9.* \
-        build-essential=12.10* \
-        bzr=2.7.* \
-        curl=8.5.* \
-        default-libmysqlclient-dev=1.1.* \
-        dnsutils=1:9.18.* \
-        fd-find=9.0.* \
-        gettext=0.21-* \
-        git=1:2.43.* \
-        git-lfs=3.4.* \
-        gnupg=2.4.* \
-        inotify-tools=3.22.* \
-        iputils-ping=3:20240117-* \
-        jq=1.7.* \
-        libbz2-dev=1.0.* \
-        libc6=2.39-* \
-        libc6-dev=2.39-* \
-        libcurl4-openssl-dev=8.5.* \
-        libdb-dev=1:5.3.* \
-        libedit2=3.1-* \
-        libffi-dev=3.4.* \
-        libgcc-13-dev=13.3.* \
-        libgdbm-compat-dev=1.23-* \
-        libgdbm-dev=1.23-* \
-        libgdiplus=6.1+dfsg-* \
-        libgssapi-krb5-2=1.20.* \
-        liblzma-dev=5.6.* \
-        libncurses-dev=6.4+20240113-* \
-        libnss3-dev=2:3.98-* \
-        libpq-dev=16.* \
-        libpsl-dev=0.21.* \
-        libpython3-dev=3.12.* \
-        libreadline-dev=8.2-* \
-        libsqlite3-dev=3.45.* \
-        libssl-dev=3.0.* \
-        libstdc++-13-dev=13.3.* \
-        libunwind8=1.6.* \
-        libuuid1=2.39.* \
-        libxml2-dev=2.9.* \
-        libz3-dev=4.8.* \
-        make=4.3-* \
-        moreutils=0.69-* \
-        netcat-openbsd=1.226-* \
-        openssh-client=1:9.6p1-* \
-        pkg-config=1.8.* \
-        protobuf-compiler=3.21.* \
-        ripgrep=14.1.* \
-        rsync=3.2.* \
-        software-properties-common=0.99.* \
-        sqlite3=3.45.* \
-        swig3.0=3.0.* \
-        tk-dev=8.6.* \
-        tzdata=2026a-* \
-        universal-ctags=5.9.* \
-        unixodbc-dev=2.3.* \
-        unzip=6.0-* \
-        uuid-dev=2.39.* \
-        wget=1.21.* \
-        xz-utils=5.6.* \
-        zip=3.0-* \
-        zlib1g=1:1.3.* \
-        zlib1g-dev=1:1.3.* \
-        fd-find=9.0.* \
-        universal-ctags=5.9.* \
+        binutils \
+        sudo \
+        build-essential \
+        bzr \
+        curl \
+        default-libmysqlclient-dev \
+        bind9-dnsutils \
+        fd-find \
+        gettext \
+        git \
+        git-lfs \
+        gnupg \
+        inotify-tools \
+        iputils-ping \
+        jq \
+        libbz2-dev \
+        libc6 \
+        libc6-dev \
+        libcurl4-openssl-dev \
+        libdb-dev \
+        libedit2 \
+        libffi-dev \
+        libgcc-15-dev \
+        libgdbm-compat-dev \
+        libgdbm-dev \
+        libgdiplus \
+        libgssapi-krb5-2 \
+        liblzma-dev \
+        libncurses-dev \
+        libnss3-dev \
+        libpq-dev \
+        libpsl-dev \
+        libpython3-dev \
+        libreadline-dev \
+        libsqlite3-dev \
+        libssl-dev \
+        libstdc++-15-dev \
+        libunwind8 \
+        libuuid1 \
+        libxml2-dev \
+        libz3-dev \
+        make \
+        moreutils \
+        netcat-openbsd \
+        openssh-client \
+        pkg-config \
+        protobuf-compiler \
+        ripgrep \
+        rsync \
+        software-properties-common \
+        sqlite3 \
+        swig \
+        tk-dev \
+        tzdata \
+        universal-ctags \
+        unixodbc-dev \
+        unzip \
+        uuid-dev \
+        wget \
+        xz-utils \
+        zip \
+        zlib1g \
+        zlib1g-dev \
+        fd-find \
+        universal-ctags \
     && rm -rf /var/lib/apt/lists/*
 
 ### MISE ###
@@ -106,13 +106,13 @@ ENV PATH=$HOME/.local/share/mise/shims:$PATH
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
-        cmake=3.28.* \
-        ccache=4.9.* \
-        ninja-build=1.11.* \
-        nasm=2.16.* \
-        yasm=1.3.* \
-        gawk=1:5.2.* \
-        lsb-release=12.0-* \
+        cmake \
+        ccache \
+        ninja-build \
+        nasm \
+        yasm \
+        gawk \
+        lsb-release \
     && rm -rf /var/lib/apt/lists/* \
     && bash -c "$(curl -fsSL https://apt.llvm.org/llvm.sh)"
 
@@ -141,7 +141,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/.cache/pipx \
     apt-get update \
-    && apt-get install -y --no-install-recommends pipx=1.4.* \
+    && apt-get install -y --no-install-recommends pipx \
     && rm -rf /var/lib/apt/lists/* \
     && pipx install --pip-args="--no-cache-dir --no-compile --root-user-action=ignore" poetry==2.1.* uv==0.7.* \
     && for pyv in "${PYENV_ROOT}/versions/"*; do \
@@ -208,20 +208,8 @@ RUN --mount=type=cache,target=/root/.cache/mise \
     && mise cache clear || true
 
 ### SWIFT ###
-
-ARG SWIFT_VERSIONS="6.2 6.1 5.10"
-ENV SWIFTLY_BIN_DIR=/root/.swiftly/bin
-ENV PATH=$SWIFTLY_BIN_DIR:$PATH
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gnupg2=2.4.* \
-    && curl -O https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz \
-    && tar zxf swiftly-$(uname -m).tar.gz \
-    && ./swiftly init --quiet-shell-followup \
-    && for v in $SWIFT_VERSIONS; do \
-         swiftly install "$v"; \
-       done \
-    && swiftly use "${SWIFT_VERSIONS%% *}"
+# Swift is intentionally omitted from this fork to keep the cloud development
+# image smaller and avoid downloading the ~1GB Swift toolchain during builds.
 
 ### RUST ###
 
@@ -241,8 +229,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,target=/root/.cache/mise \
     apt-get update && apt-get install -y --no-install-recommends \
-    libyaml-dev=0.2.* \
-    libgmp-dev=2:6.3.* \
+    libyaml-dev \
+    libgmp-dev \
     && rm -rf /var/lib/apt/lists/* \
     && for v in $RUBY_VERSIONS; do mise install "ruby@${v}"; done \
     && mise use --global "ruby@${RUBY_VERSIONS%% *}" \
@@ -285,9 +273,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
         build-essential pkg-config ccache \
-        autoconf=2.71-* bison=2:3.8.* re2c=3.1-* \
-        libgd-dev=2.3.* libedit-dev=3.1-* libicu-dev=74.2-* libjpeg-dev=8c-* \
-        libonig-dev=6.9.* libpng-dev=1.6.* libzip-dev=1.7.* \
+        autoconf bison re2c \
+        libgd-dev libedit-dev libicu-dev libjpeg-dev \
+        libonig-dev libpng-dev libzip-dev \
         libssl-dev zlib1g-dev libcurl4-openssl-dev libreadline-dev libtidy-dev libxslt1-dev \
     && rm -rf /var/lib/apt/lists/* \
     && git clone https://github.com/phpenv/phpenv.git /root/.phpenv \
@@ -329,7 +317,6 @@ RUN chmod +x /opt/verify.sh \
         NODE_VERSIONS="24 22 20 18" \
         RUST_VERSIONS="$RUST_VERSIONS" \
         GO_VERSIONS="$GO_VERSIONS" \
-        SWIFT_VERSIONS="$SWIFT_VERSIONS" \
         RUBY_VERSIONS="$RUBY_VERSIONS" \
         PHP_VERSIONS="$PHP_VERSIONS" \
         JAVA_VERSIONS="$( [ "$TARGETARCH" = "arm64" ] && echo "$ARM_JAVA_VERSIONS" || echo "$AMD_JAVA_VERSIONS" )" \

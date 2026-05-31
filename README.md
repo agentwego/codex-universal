@@ -17,9 +17,7 @@ docker pull ghcr.io/openai/codex-universal:latest
 This repository builds the image for both linux/amd64 and linux/arm64. However we only run the linux/amd64 version.
 Your installed Docker may support linux/amd64 emulation by passing the `--platform linux/amd64` flag.
 
-The arm64 image differs from the amd64 image in 2 ways:
-- OpenJDK 10 is not available on amd64
-- The arm64 image skips installing swift because of a current bug with mise
+This fork intentionally omits Swift to keep the image smaller and avoid Swift toolchain download failures during builds.
 
 The below script shows how can you approximate the `setup` environment in Codex:
 
@@ -31,7 +29,6 @@ docker run --rm -it \
     -e CODEX_ENV_NODE_VERSION=20 \
     -e CODEX_ENV_RUST_VERSION=1.87.0 \
     -e CODEX_ENV_GO_VERSION=1.23.8 \
-    -e CODEX_ENV_SWIFT_VERSION=6.2 \
     -e CODEX_ENV_RUBY_VERSION=3.4.4 \
     -e CODEX_ENV_PHP_VERSION=8.4 \
     -v $(pwd):/workspace/$(basename $(pwd)) -w /workspace/$(basename $(pwd)) \
@@ -50,7 +47,6 @@ The following environment variables can be set to configure runtime installation
 | `CODEX_ENV_NODE_VERSION`   | Node.js version to install | `18`, `20`, `22`                                 | `corepack`, `yarn`, `pnpm`, `npm`                                    |
 | `CODEX_ENV_RUST_VERSION`   | Rust version to install    | `1.83.0`, `1.84.1`, `1.85.1`, `1.86.0`, `1.87.0`, `1.88.0`, `1.89.0`, `1.90`, `1.91.1`, `1.92.0`, `1.93.0`, `1.94.0`, `1.95.0` |                                                                      |
 | `CODEX_ENV_GO_VERSION`     | Go version to install      | `1.22.12`, `1.23.8`, `1.24.3`, `1.25.1`           |                                                                      |
-| `CODEX_ENV_SWIFT_VERSION`  | Swift version to install   | `5.10`, `6.1`, `6.2`                              |                                                                      |
 | `CODEX_ENV_RUBY_VERSION`   | Ruby version to install  | `3.2.3`, `3.3.8`, `3.4.4`                |                                                                      |
 | `CODEX_ENV_PHP_VERSION`   | PHP version to install  | `8.4`, `8.3`, `8.2`                |                                                                      |
 | `CODEX_ENV_JAVA_VERSION`   | JDK version to install  | `25`, `24`, `23`, `22`, `21`, `17`, `11`                |                                                                      |
