@@ -5,9 +5,11 @@ on:
     branches: ["main"]
     paths:
       - Dockerfile.slim
+      - .dockerignore
       - setup_slim.sh
       - verify_slim.sh
       - devcontainer-start
+      - code-server-font-proxy/**
       - Taskfile.yml
       - .github/workflows/build-hermes-code.yml
   workflow_dispatch:
