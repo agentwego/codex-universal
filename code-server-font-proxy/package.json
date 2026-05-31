@@ -1,0 +1,11 @@
+{
+  "name": "code-server-font-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reverse proxy that injects Cascadia Code into code-server HTML responses.",
+  "main": "server.js",
+  "license": "MIT",
+  "dependencies": {
+    "http-proxy": "1.18.1"
+  }
+}

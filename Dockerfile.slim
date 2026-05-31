@@ -154,6 +154,13 @@ RUN curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-
     && rm /tmp/code-server-install.sh \
     && code-server --version
 
+# code-server font injection proxy.  It is baked into the image so runtime
+# containers do not depend on host-local scripts or fonts.
+COPY code-server-font-proxy/package*.json /usr/local/lib/code-server-font-proxy/
+RUN npm ci --omit=dev --prefix /usr/local/lib/code-server-font-proxy \
+    && npm cache clean --force
+COPY code-server-font-proxy/ /usr/local/lib/code-server-font-proxy/
+
 # Hermes Agent: root Docker install uses FHS layout at /usr/local/lib/hermes-agent
 # and command wrappers in /usr/local/bin. Skip interactive setup and browser deps;
 # runtime config/secrets are expected via mounted HERMES_HOME or env vars.

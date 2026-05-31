@@ -29,6 +29,9 @@ check flux --version
 check sops --version
 check age --version
 check code-server --version
+check node -e "require('/usr/local/lib/code-server-font-proxy/node_modules/http-proxy'); require('fs').accessSync('/usr/local/lib/code-server-font-proxy/server.js')"
+check test -s /usr/local/lib/code-server-font-proxy/fonts/CascadiaCode.ttf
+check test -d /usr/local/lib/code-server-font-proxy/node_modules/http-proxy
 check hermes --version
 check hermes doctor --help
 check yq --version
