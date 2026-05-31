@@ -64,7 +64,7 @@ tasks:
         {{.CONTAINER_ENGINE}} run --rm
         --platform {{.PLATFORM}}
         {{.IMAGE}}:{{.TAG}}
-        bash -lc 'git --version && gh --version && python3 --version && uv --version && node --version && pnpm --version && go version && kubectl version --client=true && helm version --short && talosctl version --client'
+        bash -lc 'git --version && gh --version && python3 --version && uv --version && node --version && pnpm --version && go version && docker --version && kubectl version --client=true && helm version --short && talosctl version --client'
 
   verify:
     desc: Run verify.sh inside the built image

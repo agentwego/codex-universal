@@ -21,6 +21,7 @@ check pnpm --version
 check tsc --version
 check tsx --version
 check go version
+check docker --version
 check kubectl version --client=true
 check helm version --short
 check kustomize version
