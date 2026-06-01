@@ -18,6 +18,7 @@ ARG ANSWER_MOCKGEN_VERSION=0.6.0
 ARG ANSWER_GOLANGCI_LINT_VERSION=2.6.2
 ARG HERMES_REPO_HTTPS=https://github.com/agentwego/hermes-agent.git
 ARG HERMES_BRANCH=feat/mattermost-tool-trace
+ARG HERMES_SOURCE_REV=ce7a690497489df121a66030e9b31f87719fd9bf
 ARG CODE_SERVER_VERSION=
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -220,9 +221,11 @@ RUN curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-
         /tmp/hermes-install.sh \
     && bash /tmp/hermes-install.sh --branch "${HERMES_BRANCH}" --skip-setup --skip-browser \
     && rm /tmp/hermes-install.sh \
+    && git -C /usr/local/lib/hermes-agent fetch origin "${HERMES_SOURCE_REV}" \
+    && git -C /usr/local/lib/hermes-agent checkout --detach "${HERMES_SOURCE_REV}" \
     && hermes --version \
     && test "$(git -C /usr/local/lib/hermes-agent remote get-url origin)" = "${HERMES_REPO_HTTPS}" \
-    && test "$(git -C /usr/local/lib/hermes-agent rev-parse --abbrev-ref HEAD)" = "${HERMES_BRANCH}" \
+    && test "$(git -C /usr/local/lib/hermes-agent rev-parse HEAD)" = "${HERMES_SOURCE_REV}" \
     && python3 -m py_compile \
         /usr/local/lib/hermes-agent/gateway/run.py \
         /usr/local/lib/hermes-agent/gateway/tool_trace.py \
