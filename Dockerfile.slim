@@ -16,7 +16,8 @@ ARG ANSWER_SWAG_VERSION=1.16.3
 ARG ANSWER_WIRE_VERSION=0.5.0
 ARG ANSWER_MOCKGEN_VERSION=0.6.0
 ARG ANSWER_GOLANGCI_LINT_VERSION=2.6.2
-ARG HERMES_BRANCH=main
+ARG HERMES_REPO_HTTPS=https://github.com/agentwego/hermes-agent.git
+ARG HERMES_BRANCH=feat/mattermost-tool-trace
 ARG CODE_SERVER_VERSION=
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -210,18 +211,18 @@ COPY code-server-font-proxy/ /usr/local/lib/code-server-font-proxy/
 # Hermes Agent: root Docker install uses FHS layout at /usr/local/lib/hermes-agent
 # and command wrappers in /usr/local/bin. Skip interactive setup and browser deps;
 # runtime config/secrets are expected via mounted HERMES_HOME or env vars.
+# Use the AgentWeGo fork branch directly instead of carrying file overlays.
 RUN curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20) \
     && "${curl_retry[@]}" https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh -o /tmp/hermes-install.sh \
+    && sed -i \
+        -e "s|^REPO_URL_SSH=.*|REPO_URL_SSH=\"${HERMES_REPO_HTTPS}\"|" \
+        -e "s|^REPO_URL_HTTPS=.*|REPO_URL_HTTPS=\"${HERMES_REPO_HTTPS}\"|" \
+        /tmp/hermes-install.sh \
     && bash /tmp/hermes-install.sh --branch "${HERMES_BRANCH}" --skip-setup --skip-browser \
-    && rm /tmp/hermes-install.sh
-
-# Carry local Hermes gateway patches required by the devbox/Sayo runtime while
-# they are being upstreamed.  Keep these as narrow source overlays so the base
-# installer path remains unchanged and easy to remove later.
-COPY hermes-agent-overrides/gateway/run.py /usr/local/lib/hermes-agent/gateway/run.py
-COPY hermes-agent-overrides/gateway/tool_trace.py /usr/local/lib/hermes-agent/gateway/tool_trace.py
-COPY hermes-agent-overrides/agent/tool_executor.py /usr/local/lib/hermes-agent/agent/tool_executor.py
-RUN hermes --version \
+    && rm /tmp/hermes-install.sh \
+    && hermes --version \
+    && test "$(git -C /usr/local/lib/hermes-agent remote get-url origin)" = "${HERMES_REPO_HTTPS}" \
+    && test "$(git -C /usr/local/lib/hermes-agent rev-parse --abbrev-ref HEAD)" = "${HERMES_BRANCH}" \
     && python3 -m py_compile \
         /usr/local/lib/hermes-agent/gateway/run.py \
         /usr/local/lib/hermes-agent/gateway/tool_trace.py \
