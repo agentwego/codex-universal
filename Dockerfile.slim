@@ -116,13 +116,14 @@ RUN case "${TARGETARCH:-amd64}" in \
     && pnpm --version \
     && tsc --version
 
-# Python tooling commonly needed in devcontainers.
+# Python tooling commonly needed in devcontainers. Symlink pipx-installed
+# tools into /usr/local/bin because runtime deployments provide their own PATH.
 RUN python3 -m pipx ensurepath \
     && pipx install uv \
     && pipx install ruff \
     && pipx install black \
     && pipx install poetry \
-    && pipx ensurepath --global \
+    && for tool in uv ruff black poetry; do ln -sf "/root/.local/bin/${tool}" "/usr/local/bin/${tool}"; done \
     && uv --version \
     && ruff --version \
     && black --version \
