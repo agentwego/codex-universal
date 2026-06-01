@@ -8,6 +8,8 @@ ARG KUSTOMIZE_VERSION=5.7.1
 ARG TALOSCTL_VERSION=1.11.3
 ARG FLUX_VERSION=2.6.4
 ARG SOPS_VERSION=3.10.2
+ARG TASK_VERSION=3.51.1
+ARG BUILDX_VERSION=0.34.1
 ARG HERMES_BRANCH=main
 ARG CODE_SERVER_VERSION=
 
@@ -127,8 +129,8 @@ RUN python3 -m pipx ensurepath \
 
 # Kubernetes/GitOps/Talos helpers not provided as Ubuntu packages.
 RUN case "${TARGETARCH:-amd64}" in \
-      amd64) bin_arch=amd64; kustomize_arch=amd64 ;; \
-      arm64) bin_arch=arm64; kustomize_arch=arm64 ;; \
+      amd64) bin_arch=amd64; task_arch=amd64; kustomize_arch=amd64 ;; \
+      arm64) bin_arch=arm64; task_arch=arm64; kustomize_arch=arm64 ;; \
       *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
     esac \
     && curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20) \
@@ -146,10 +148,18 @@ RUN case "${TARGETARCH:-amd64}" in \
     && rm /tmp/flux.tgz \
     && "${curl_retry[@]}" "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${bin_arch}" -o /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops \
+    && "${curl_retry[@]}" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_${task_arch}.tar.gz" -o /tmp/task.tgz \
+    && tar -C /usr/local/bin -xzf /tmp/task.tgz task \
+    && rm /tmp/task.tgz \
+    && install -d /usr/local/lib/docker/cli-plugins \
+    && "${curl_retry[@]}" "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-${bin_arch}" -o /usr/local/lib/docker/cli-plugins/docker-buildx \
+    && chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx \
     && helm version --short \
     && kustomize version \
     && talosctl version --client \
-    && flux --version
+    && flux --version \
+    && task --version \
+    && docker buildx version
 
 
 # code-server: standalone install under /usr/local to avoid systemd assumptions.

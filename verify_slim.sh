@@ -22,6 +22,8 @@ check tsc --version
 check tsx --version
 check go version
 check docker --version
+check docker buildx version
+check task --version
 check kubectl version --client=true
 check helm version --short
 check kustomize version
