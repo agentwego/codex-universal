@@ -122,6 +122,7 @@ RUN python3 -m pipx ensurepath \
     && pipx install ruff \
     && pipx install black \
     && pipx install poetry \
+    && pipx ensurepath --global \
     && uv --version \
     && ruff --version \
     && black --version \
