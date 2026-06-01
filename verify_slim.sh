@@ -39,5 +39,6 @@ check hermes --version
 check hermes doctor --help
 check yq --version
 check jq --version
+check fastfetch --version
 
 echo "Slim image verification completed."
