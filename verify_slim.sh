@@ -11,6 +11,7 @@ check() {
 check git --version
 check gh --version
 check python3 --version
+check python --version
 check uv --version
 check ruff --version
 check black --version
@@ -21,8 +22,14 @@ check pnpm --version
 check tsc --version
 check tsx --version
 check go version
+check mockgen -version
+check swag -v
+check wire flags
+check golangci-lint version
 check docker --version
 check docker buildx version
+check docker compose version
+check docker-compose version
 check task --version
 check kubectl version --client=true
 check helm version --short
