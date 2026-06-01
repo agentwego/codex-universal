@@ -213,8 +213,19 @@ COPY code-server-font-proxy/ /usr/local/lib/code-server-font-proxy/
 RUN curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20) \
     && "${curl_retry[@]}" https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh -o /tmp/hermes-install.sh \
     && bash /tmp/hermes-install.sh --branch "${HERMES_BRANCH}" --skip-setup --skip-browser \
-    && rm /tmp/hermes-install.sh \
-    && hermes --version \
+    && rm /tmp/hermes-install.sh
+
+# Carry local Hermes gateway patches required by the devbox/Sayo runtime while
+# they are being upstreamed.  Keep these as narrow source overlays so the base
+# installer path remains unchanged and easy to remove later.
+COPY hermes-agent-overrides/gateway/run.py /usr/local/lib/hermes-agent/gateway/run.py
+COPY hermes-agent-overrides/gateway/tool_trace.py /usr/local/lib/hermes-agent/gateway/tool_trace.py
+COPY hermes-agent-overrides/agent/tool_executor.py /usr/local/lib/hermes-agent/agent/tool_executor.py
+RUN hermes --version \
+    && python3 -m py_compile \
+        /usr/local/lib/hermes-agent/gateway/run.py \
+        /usr/local/lib/hermes-agent/gateway/tool_trace.py \
+        /usr/local/lib/hermes-agent/agent/tool_executor.py \
     && hermes tools list >/tmp/hermes-tools-list.txt || true
 
 COPY setup_slim.sh /opt/codex/setup_universal.sh
