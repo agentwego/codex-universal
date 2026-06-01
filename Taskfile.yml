@@ -64,7 +64,7 @@ tasks:
         {{.CONTAINER_ENGINE}} run --rm
         --platform {{.PLATFORM}}
         {{.IMAGE}}:{{.TAG}}
-        bash -lc 'git --version && gh --version && python3 --version && uv --version && node --version && pnpm --version && go version && docker --version && kubectl version --client=true && helm version --short && talosctl version --client && fastfetch --version'
+        bash -lc 'git --version && gh --version && python3 --version && uv --version && node --version && pnpm --version && go version && mockgen -version && swag -v && wire flags >/tmp/wire-flags.txt && golangci-lint version && docker --version && docker buildx version && docker compose version && kubectl version --client=true && helm version --short && talosctl version --client && fastfetch --version'
 
   verify:
     desc: Run verify.sh inside the built image

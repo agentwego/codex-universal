@@ -11,6 +11,11 @@ ARG SOPS_VERSION=3.13.1
 ARG HELM_VERSION=4.2.0
 ARG TASK_VERSION=3.51.1
 ARG BUILDX_VERSION=0.34.1
+ARG DOCKER_COMPOSE_VERSION=5.1.4
+ARG ANSWER_SWAG_VERSION=1.16.3
+ARG ANSWER_WIRE_VERSION=0.5.0
+ARG ANSWER_MOCKGEN_VERSION=0.6.0
+ARG ANSWER_GOLANGCI_LINT_VERSION=2.6.2
 ARG HERMES_BRANCH=main
 ARG CODE_SERVER_VERSION=
 
@@ -67,6 +72,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         age \
         tini \
     && git lfs install --system \
+    && ln -sf /usr/bin/python3 /usr/local/bin/python \
+    && ln -sf /usr/bin/python3 /usr/local/bin/python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # GitHub CLI and kubectl via official apt repositories.
@@ -97,6 +104,17 @@ RUN case "${TARGETARCH:-amd64}" in \
     && ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt \
     && go version
 
+# Go developer tools used by Answer and other Go/React projects.
+RUN GOBIN=/usr/local/bin go install "github.com/swaggo/swag/cmd/swag@v${ANSWER_SWAG_VERSION}" \
+    && GOBIN=/usr/local/bin go install "github.com/google/wire/cmd/wire@v${ANSWER_WIRE_VERSION}" \
+    && GOBIN=/usr/local/bin go install "go.uber.org/mock/mockgen@v${ANSWER_MOCKGEN_VERSION}" \
+    && curl -sSfL "https://raw.githubusercontent.com/golangci/golangci-lint/v${ANSWER_GOLANGCI_LINT_VERSION}/install.sh" | sh -s -- -b /usr/local/bin "v${ANSWER_GOLANGCI_LINT_VERSION}" \
+    && rm -rf /root/.cache/go-build /root/go/pkg/mod \
+    && mockgen -version \
+    && swag -v \
+    && wire flags >/tmp/wire-flags.txt \
+    && golangci-lint version
+
 # Node.js + TypeScript + pnpm through corepack.
 RUN case "${TARGETARCH:-amd64}" in \
       amd64) node_arch=x64 ;; \
@@ -115,6 +133,10 @@ RUN case "${TARGETARCH:-amd64}" in \
     && ln -sf /opt/node/bin/npm /usr/local/bin/npm \
     && ln -sf /opt/node/bin/npx /usr/local/bin/npx \
     && ln -sf /opt/node/bin/corepack /usr/local/bin/corepack \
+    && ln -sf /opt/node/bin/pnpm /usr/local/bin/pnpm \
+    && ln -sf /opt/node/bin/pnpx /usr/local/bin/pnpx \
+    && ln -sf /opt/node/bin/yarn /usr/local/bin/yarn \
+    && ln -sf /opt/node/bin/yarnpkg /usr/local/bin/yarnpkg \
     && npm install -g typescript tsx @types/node \
     && node --version \
     && pnpm --version \
@@ -135,8 +157,8 @@ RUN python3 -m pipx ensurepath \
 
 # Kubernetes/GitOps/Talos helpers not provided as Ubuntu packages.
 RUN case "${TARGETARCH:-amd64}" in \
-      amd64) bin_arch=amd64; task_arch=amd64; kustomize_arch=amd64 ;; \
-      arm64) bin_arch=arm64; task_arch=arm64; kustomize_arch=arm64 ;; \
+      amd64) bin_arch=amd64; task_arch=amd64; kustomize_arch=amd64; compose_arch=x86_64 ;; \
+      arm64) bin_arch=arm64; task_arch=arm64; kustomize_arch=arm64; compose_arch=aarch64 ;; \
       *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
     esac \
     && curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20) \
@@ -160,6 +182,9 @@ RUN case "${TARGETARCH:-amd64}" in \
     && install -d /usr/local/lib/docker/cli-plugins \
     && "${curl_retry[@]}" "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-${bin_arch}" -o /usr/local/lib/docker/cli-plugins/docker-buildx \
     && chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx \
+    && "${curl_retry[@]}" "https://github.com/docker/compose/releases/download/v${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${compose_arch}" -o /usr/local/lib/docker/cli-plugins/docker-compose \
+    && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose \
+    && ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose \
     && helm version --short \
     && kustomize version \
     && talosctl version --client \
