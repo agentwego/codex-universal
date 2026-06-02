@@ -226,12 +226,12 @@ RUN curl_retry=(curl -fL --retry 5 --retry-all-errors --retry-delay 3 --connect-
     && hermes --version \
     && test "$(git -C /usr/local/lib/hermes-agent remote get-url origin)" = "${HERMES_REPO_HTTPS}" \
     && test "$(git -C /usr/local/lib/hermes-agent rev-parse HEAD)" = "${HERMES_SOURCE_REV}" \
-    && /usr/local/lib/hermes-agent/venv/bin/python -m pip install --no-cache-dir 'langfuse==4.7.1' \
+    && uv pip install --python /usr/local/lib/hermes-agent/venv/bin/python 'langfuse==4.7.1' \
     && python3 -m py_compile \
         /usr/local/lib/hermes-agent/gateway/run.py \
         /usr/local/lib/hermes-agent/gateway/tool_trace.py \
         /usr/local/lib/hermes-agent/agent/tool_executor.py \
-    && hermes tools list >/tmp/hermes-tools-list.txt || true
+    && (hermes tools list >/tmp/hermes-tools-list.txt || true)
 
 COPY setup_slim.sh /opt/codex/setup_universal.sh
 COPY verify_slim.sh /opt/codex/verify.sh
