@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1.7
+FROM ubuntu:26.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update \
+    && apt-get install -y --no-install-recommends \
+        aria2 \
+        ca-certificates \
+        curl \
+        file \
+        git \
+        jq \
+        mediainfo \
+        openssh-client \
+        openssh-server \
+        python3 \
+        python3-pip \
+        python3-venv \
+        rclone \
+        rsync \
+        tini \
+        unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && install -d -m 0755 /run/sshd /media /workspace
+
+COPY media-workspace-entrypoint /usr/local/bin/media-workspace-entrypoint
+RUN chmod 0755 /usr/local/bin/media-workspace-entrypoint \
+    && printf '%s\n' \
+        'PasswordAuthentication no' \
+        'KbdInteractiveAuthentication no' \
+        'PermitRootLogin prohibit-password' \
+        'X11Forwarding no' \
+        'AllowTcpForwarding yes' \
+        'PermitTunnel no' \
+        'ClientAliveInterval 60' \
+        'ClientAliveCountMax 3' \
+        > /etc/ssh/sshd_config.d/media-workspace.conf
+
+EXPOSE 22
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/media-workspace-entrypoint"]

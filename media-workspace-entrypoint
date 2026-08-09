@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+
+authorized_key=/run/secrets/authorized_keys
+host_key_dir=/workspace/ssh
+host_key="$host_key_dir/ssh_host_ed25519_key"
+
+test -s "$authorized_key"
+ssh-keygen -l -f "$authorized_key" >/dev/null
+
+install -d -m 0700 /root/.ssh "$host_key_dir"
+install -m 0600 "$authorized_key" /root/.ssh/authorized_keys
+
+if [ ! -s "$host_key" ]; then
+  ssh-keygen -q -t ed25519 -N '' -f "$host_key"
+fi
+chmod 0600 "$host_key"
+
+install -d -m 0755 \
+  /media/downloads/incomplete \
+  /media/downloads/complete \
+  /media/library/movies \
+  /media/library/tv \
+  /media/library/music \
+  /media/work \
+  /media/exports \
+  /media/trash \
+  /media/.hermes/jobs \
+  /media/.hermes/audit
+
+exec /usr/sbin/sshd -D -e -o "HostKey=$host_key"
