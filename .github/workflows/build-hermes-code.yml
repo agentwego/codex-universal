@@ -1,8 +1,9 @@
 name: Build Hermes code-server image
 
 on:
+  # Weekly upstream refresh: Monday 03:23 Asia/Shanghai (Sunday 19:23 UTC).
   schedule:
-    - cron: "23 */6 * * *"
+    - cron: "23 19 * * 0"
   push:
     branches: ["main"]
     paths:
@@ -13,7 +14,6 @@ on:
       - devcontainer-start
       - code-server-font-proxy/**
       - Taskfile.yml
-      - .github/workflows/build-hermes-code.yml
   workflow_dispatch:
 
 concurrency:
