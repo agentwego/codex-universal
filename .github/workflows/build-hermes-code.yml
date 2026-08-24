@@ -48,9 +48,11 @@ jobs:
           test -n "$upstream_sha"
           short_sha="${upstream_sha::12}"
           stamp="$(date -u +%Y%m%d-%H%M%S)"
-          echo "version_tag=hermes-code-${stamp}-${short_sha}" >> "$GITHUB_OUTPUT"
-          echo "marker_tag=hermes-code-upstream-${short_sha}" >> "$GITHUB_OUTPUT"
-          echo "upstream_sha=${upstream_sha}" >> "$GITHUB_OUTPUT"
+          {
+            echo "version_tag=hermes-code-${stamp}-${short_sha}"
+            echo "marker_tag=hermes-code-upstream-${short_sha}"
+            echo "upstream_sha=${upstream_sha}"
+          } >> "$GITHUB_OUTPUT"
       - name: Check for an existing upstream build
         id: existing
         shell: bash
@@ -68,7 +70,10 @@ jobs:
           context: .
           file: Dockerfile.slim
           platforms: linux/amd64
-          push: true
+          # Feature-branch workflow_dispatch runs must not publish tags matched
+          # by Flux's production ImagePolicy.
+          push: ${{ github.ref == 'refs/heads/main' }}
+          load: ${{ github.ref != 'refs/heads/main' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:hermes-code
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version_tag }}
@@ -79,7 +84,10 @@ jobs:
           cache-to: type=inline
           provenance: false
           sbom: false
+      - name: Smoke test feature-branch image
+        if: steps.existing.outputs.build == 'true' && github.ref != 'refs/heads/main'
+        run: docker run --rm "$REGISTRY/$IMAGE_NAME:hermes-code" opencli --version
       - name: Verify pushed tag exists
-        if: steps.existing.outputs.build == 'true'
+        if: steps.existing.outputs.build == 'true' && github.ref == 'refs/heads/main'
         run: |
           docker buildx imagetools inspect "$REGISTRY/$IMAGE_NAME:${{ steps.meta.outputs.version_tag }}"
