@@ -4,6 +4,7 @@ FROM ubuntu:26.04
 ARG TARGETARCH
 ARG GO_VERSION=1.26.3
 ARG NODE_VERSION=24
+ARG OPENCLI_VERSION=1.8.7
 ARG KUSTOMIZE_VERSION=5.8.1
 ARG TALOSCTL_VERSION=1.13.3
 ARG FLUX_VERSION=2.8.8
@@ -116,6 +117,7 @@ RUN GOBIN=/usr/local/bin go install "github.com/swaggo/swag/cmd/swag@v${ANSWER_S
     && golangci-lint version
 
 # Node.js + TypeScript + pnpm through corepack.
+COPY opencli-cdp-patch.py /opt/codex/opencli-cdp-patch.py
 RUN case "${TARGETARCH:-amd64}" in \
       amd64) node_arch=x64 ;; \
       arm64) node_arch=arm64 ;; \
@@ -137,10 +139,12 @@ RUN case "${TARGETARCH:-amd64}" in \
     && ln -sf /opt/node/bin/pnpx /usr/local/bin/pnpx \
     && ln -sf /opt/node/bin/yarn /usr/local/bin/yarn \
     && ln -sf /opt/node/bin/yarnpkg /usr/local/bin/yarnpkg \
-    && npm install -g typescript tsx @types/node \
+    && npm install -g typescript tsx @types/node "@jackwener/opencli@${OPENCLI_VERSION}" \
+    && python3 /opt/codex/opencli-cdp-patch.py /opt/node/lib/node_modules/@jackwener/opencli \
     && node --version \
     && pnpm --version \
-    && tsc --version
+    && tsc --version \
+    && opencli --version
 
 # Python tooling commonly needed in devcontainers. Symlink pipx-installed
 # tools into /usr/local/bin because runtime deployments provide their own PATH.
