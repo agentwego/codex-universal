@@ -126,6 +126,10 @@ def main() -> None:
         page.setActivePage(resolvedTargetPage);
     }
     if (cdpEndpoint) {
+        // CDPBridge pages do not carry BrowserBridge's routing metadata, but
+        // browser commands use it for tab state, sitemap hints, and output.
+        page.session = session;
+        page.preferredContextId = profileSelection?.contextId;
         page.__opencliCloseTransport = () => bridge.close();
     }
     return page;
