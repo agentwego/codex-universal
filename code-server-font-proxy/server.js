@@ -6,6 +6,12 @@ const http = require('http');
 const path = require('path');
 const { spawn } = require('child_process');
 const httpProxy = require('http-proxy');
+const {
+  buildCodeServerArgs,
+  rewriteHtml,
+  shouldForceIdentity,
+  shouldRewriteHtml,
+} = require('./proxy-utils');
 
 const installDir = __dirname;
 const fontPath = path.join(installDir, 'fonts', 'CascadiaCode.ttf');
@@ -54,11 +60,7 @@ const css = `@font-face {
 
 let shuttingDown = false;
 
-const codeServer = spawn('code-server', [
-  '--bind-addr', `${realHost}:${realPort}`,
-  '--auth', auth,
-  workdir,
-], {
+const codeServer = spawn('code-server', buildCodeServerArgs(realHost, realPort, auth, workdir), {
   stdio: ['ignore', 'inherit', 'inherit'],
   env: {
     ...process.env,
@@ -86,16 +88,18 @@ const proxy = httpProxy.createProxyServer({
   selfHandleResponse: true,
 });
 
-proxy.on('proxyReq', (proxyReq) => {
-  proxyReq.setHeader('accept-encoding', 'identity');
+proxy.on('proxyReq', (proxyReq, req) => {
+  if (shouldForceIdentity(req.headers)) {
+    proxyReq.setHeader('accept-encoding', 'identity');
+  }
 });
 
 proxy.on('proxyRes', (proxyRes, req, res) => {
   const headers = { ...proxyRes.headers };
   const contentType = String(headers['content-type'] || '');
-  const isHtml = /^text\/html(?:;|$)/i.test(contentType);
+  const contentEncoding = headers['content-encoding'];
 
-  if (!isHtml) {
+  if (!shouldRewriteHtml(contentType, contentEncoding)) {
     res.writeHead(proxyRes.statusCode || 500, headers);
     proxyRes.pipe(res);
     return;
@@ -105,9 +109,7 @@ proxy.on('proxyRes', (proxyRes, req, res) => {
   proxyRes.on('data', (chunk) => chunks.push(chunk));
   proxyRes.on('end', () => {
     const original = Buffer.concat(chunks).toString('utf8');
-    const rewritten = original.includes(cssPath)
-      ? original
-      : original.replace(/<\/head>/i, `${injectionMarkup}\n</head>`);
+    const rewritten = rewriteHtml(original, injectionMarkup, cssPath);
     const body = Buffer.from(rewritten, 'utf8');
 
     delete headers['content-length'];

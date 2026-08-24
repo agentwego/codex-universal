@@ -19,6 +19,8 @@ if [ "${START_CODE_SERVER:-1}" = "1" ]; then
   exec code-server \
     --bind-addr "${CODE_SERVER_HOST}:${CODE_SERVER_PORT}" \
     --auth "${CODE_SERVER_AUTH}" \
+    --disable-update-check \
+    --disable-telemetry \
     "${CODE_SERVER_WORKDIR}"
 fi
 
