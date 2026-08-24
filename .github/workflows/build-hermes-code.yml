@@ -8,6 +8,7 @@ on:
     branches: ["main"]
     paths:
       - Dockerfile.slim
+      - opencli-cdp-patch.py
       - .dockerignore
       - setup_slim.sh
       - verify_slim.sh
