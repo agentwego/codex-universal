@@ -151,8 +151,48 @@ def main() -> None:
     }
     function browserSessionCommandAction(fn) {""",
     )
+    replace_exact(
+        dist / "cli.js",
+        """        applyVerbose(opts);
+        const { runBrowserDoctor, renderBrowserDoctorReport } = await import('./doctor.js');
+        const report = await runBrowserDoctor({ cliVersion: PKG_VERSION });
+        console.log(renderBrowserDoctorReport(report));""",
+        """        applyVerbose(opts);
+        const cdpEndpoint = process.env.OPENCLI_CDP_ENDPOINT?.trim();
+        if (!cdpEndpoint) {
+            const { runBrowserDoctor, renderBrowserDoctorReport } = await import('./doctor.js');
+            const report = await runBrowserDoctor({ cliVersion: PKG_VERSION });
+            console.log(renderBrowserDoctorReport(report));
+            return;
+        }
+        const { CDPBridge } = await import('./browser/index.js');
+        const bridge = new CDPBridge();
+        try {
+            await bridge.connect({
+                timeout: DEFAULT_BROWSER_CONNECT_TIMEOUT,
+                cdpEndpoint,
+                session: 'opencli-doctor',
+                surface: 'browser',
+            });
+            const version = await bridge.send('Browser.getVersion');
+            console.log([
+                `opencli v${PKG_VERSION} doctor (node ${process.version})`,
+                '',
+                '[MODE] Direct CDP',
+                `[OK] Connectivity: ${version.product ?? 'Chrome'}`,
+                `[OK] Endpoint: ${cdpEndpoint}`,
+            ].join('\\n'));
+        }
+        catch (err) {
+            console.error(`Direct CDP connectivity failed: ${getErrorMessage(err)}`);
+            process.exitCode = EXIT_CODES.GENERIC_ERROR;
+        }
+        finally {
+            await bridge.close().catch(() => { });
+        }""",
+    )
 
-    print(f"patched OpenCLI CDP routing under {args.package_root}")
+    print(f"patched OpenCLI CDP routing and doctor under {args.package_root}")
 
 
 if __name__ == "__main__":
