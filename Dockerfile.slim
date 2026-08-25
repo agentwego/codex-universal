@@ -117,8 +117,9 @@ RUN GOBIN=/usr/local/bin go install "github.com/swaggo/swag/cmd/swag@v${ANSWER_S
     && golangci-lint version
 
 # Node.js + TypeScript + pnpm through corepack.
-COPY opencli-cdp-patch.py /opt/codex/opencli-cdp-patch.py
-RUN case "${TARGETARCH:-amd64}" in \
+COPY opencli-cdp-patch.py test_opencli_cdp_patch.py /opt/codex/
+RUN python3 /opt/codex/test_opencli_cdp_patch.py \
+    && case "${TARGETARCH:-amd64}" in \
       amd64) node_arch=x64 ;; \
       arm64) node_arch=arm64 ;; \
       *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
